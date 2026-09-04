@@ -1,12 +1,10 @@
-// サーバーを立てる部分
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
-const { listImages, DEFAULT_IMG_DIR } = require("./imageScanner");
 
 const ROOT = __dirname;
 const PORT = 8080;
-const IMG_DIR = DEFAULT_IMG_DIR;
+const IMG_DIR = path.join(ROOT, "Images");
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -22,11 +20,19 @@ const MIME = {
   ".ico": "image/x-icon"
 };
 
+function listImages(cb) {
+  fs.readdir(IMG_DIR, (err, files) => {
+    if (err) return cb(null, []);
+    const imgs = files.filter(f => /\.(jpe?g|png|gif|webp|svg|bmp)$/i.test(f)).sort();
+    cb(null, imgs);
+  });
+}
+
 const server = http.createServer((req, res) => {
   const urlPath = decodeURIComponent(req.url.split("?")[0]);
 
   if (urlPath === "/api/images") {
-    listImages(IMG_DIR, (err, imgs) => {
+    listImages((err, imgs) => {
       res.setHeader("Content-Type", "application/json; charset=utf-8");
       res.setHeader("Access-Control-Allow-Origin", "*");
       res.end(JSON.stringify({ Files: imgs.map(name => ({ Name: name })) }));
